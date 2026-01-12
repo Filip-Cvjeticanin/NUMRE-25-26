@@ -6,3 +6,6 @@ Obavezno lokalno napraviti .venv i instalirati sve u requirements.txt.
 
 Obavijesti o updatu za .venv:
 	- 12.01.2026. dodan numpy
+	- 12.01.2026. dodan torch
+	- 12.01.2026. dodan transformers
+	- 12.01.2026. dodan bert-extractive-summarizer
