@@ -1,5 +1,4 @@
 import torch
-import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
 from nltk.tokenize import sent_tokenize
 import nltk
@@ -14,8 +13,8 @@ DOWNLOAD_PUNKT = True
 
 def configuration(condition):
     if condition:
-        nltk.download("punkt")
-        nltk.download("punkt_tab")
+        nltk.download("punkt", quiet=True)
+        nltk.download("punkt_tab", quiet=True)
 
 # -----------------------------
 # 2. SBERT Sentence Encoder
@@ -107,6 +106,85 @@ def label_article_sentences(article_text, abstract_text, encoder):
 
 
 
+
+
+
+
+def text_extraction(article: str, abstract: str, override_download_condition: bool | None = None, info = False) -> str:
+    """
+    Converts a pair of (article, abstract) into an extracted summary and returns it.
+    :param info:
+    :param article:
+    :param abstract:
+    :param override_download_condition:
+    :return:
+    """
+
+    # Download punkt if needed.
+    download_condition = DOWNLOAD_PUNKT
+    if override_download_condition is not None:
+        download_condition = override_download_condition
+    configuration(download_condition)
+
+    # Initialize encoder.
+    encoder = SBERTSentenceEncoder()
+
+    # Match sentences.
+    matched, indices, scores = align_abstract_to_article(
+        article, abstract, encoder
+    )
+
+    # Output and return.
+    if info: print("\n\nMatched sentences:")
+    for i, (s, idx, sc) in enumerate(zip(matched, indices, scores)):
+        if info: print(f"{i + 1}. [Article idx {idx}] (sim={sc:.3f})")
+        if info: print(f"   {s}")
+    labels = label_article_sentences(article, abstract, encoder)
+    if info: print("Labels:")
+    if info: print(labels)
+    if info: print("Returning text extracted summary...")
+
+    extracted_summary = " ".join(matched)
+    return extracted_summary
+
+
+def label_tensor_extraction(article: str, abstract: str, override_download_condition: bool | None = None, info = False) -> torch.Tensor:
+    """
+    Converts a pair of (article, abstract) into a tensor labels - 0 in that sentence isn't matched, 1 if it is.
+    :param info:
+    :param article:
+    :param abstract:
+    :param override_download_condition:
+    :return:
+    """
+    # Download punkt if needed.
+    download_condition = DOWNLOAD_PUNKT
+    if override_download_condition is not None:
+        download_condition = override_download_condition
+    configuration(download_condition)
+
+    # Initialize encoder.
+    encoder = SBERTSentenceEncoder()
+
+    # Match sentences.
+    matched, indices, scores = align_abstract_to_article(
+        article, abstract, encoder
+    )
+
+    # Output and return.
+    if info: print("\n\nMatched sentences:")
+    for i, (s, idx, sc) in enumerate(zip(matched, indices, scores)):
+        if info: print(f"{i + 1}. [Article idx {idx}] (sim={sc:.3f})")
+        if info: print(f"   {s}")
+    labels = label_article_sentences(article, abstract, encoder)
+    if info: print("Labels:")
+    if info: print(labels)
+    if info: print("Returning labels tensor")
+
+    return labels
+
+
+
 def example_extraction():
     article = """
     Neural networks have been widely adopted in natural language processing.
@@ -119,81 +197,9 @@ def example_extraction():
     BERT introduced transformers and understanding of language.
     In extractive summarization we select important sentences.
     """
-    extracted_summary = text_extraction(article, abstract)
+    extracted_summary = text_extraction(article, abstract, info=True)
     return extracted_summary
 
-
-
-def text_extraction(article: str, abstract: str, override_download_condition: bool | None = None) -> str:
-    """
-    Converts a pair of (article, abstract) into an extracted summary and returns it.
-    :param article:
-    :param abstract:
-    :param override_download_condition:
-    :return:
-    """
-
-    # Download punkt if needed.
-    download_condition = DOWNLOAD_PUNKT
-    if override_download_condition is not None:
-        download_condition = override_download_condition
-    configuration(download_condition)
-
-    # Initialize encoder.
-    encoder = SBERTSentenceEncoder()
-
-    # Match sentences.
-    matched, indices, scores = align_abstract_to_article(
-        article, abstract, encoder
-    )
-
-    # Output and return.
-    print("\n\nMatched sentences:")
-    for i, (s, idx, sc) in enumerate(zip(matched, indices, scores)):
-        print(f"{i + 1}. [Article idx {idx}] (sim={sc:.3f})")
-        print(f"   {s}")
-    labels = label_article_sentences(article, abstract, encoder)
-    print("Labels:")
-    print(labels)
-    print("Returning text extracted summary.")
-
-    extracted_summary = " ".join(matched)
-    return extracted_summary
-
-
-def label_tensor_extraction(article: str, abstract: str, override_download_condition: bool | None = None) -> torch.Tensor:
-    """
-    Converts a pair of (article, abstract) into a tensor labels - 0 in that sentence isn't matched, 1 if it is.
-    :param article:
-    :param abstract:
-    :param override_download_condition:
-    :return:
-    """
-    # Download punkt if needed.
-    download_condition = DOWNLOAD_PUNKT
-    if override_download_condition is not None:
-        download_condition = override_download_condition
-    configuration(download_condition)
-
-    # Initialize encoder.
-    encoder = SBERTSentenceEncoder()
-
-    # Match sentences.
-    matched, indices, scores = align_abstract_to_article(
-        article, abstract, encoder
-    )
-
-    # Output and return.
-    print("\n\nMatched sentences:")
-    for i, (s, idx, sc) in enumerate(zip(matched, indices, scores)):
-        print(f"{i + 1}. [Article idx {idx}] (sim={sc:.3f})")
-        print(f"   {s}")
-    labels = label_article_sentences(article, abstract, encoder)
-    print("Labels:")
-    print(labels)
-    print("Returning labels tensor")
-
-    return labels
 
 
 
