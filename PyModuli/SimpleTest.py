@@ -107,7 +107,7 @@ def generate_labels(sentences, summary_sentences):
 # # ==============================
 # 5. Training Function
 # # ==============================
-def train_model(encoder, scorer, sentences, labels, save_path = None, epoch_num = EPOCHS):
+def train_model(encoder, scorer, sentences, labels, save_path = None, epoch_num = EPOCHS, epoch_idx = 0):
     encoder.model.train()
     scorer.train()
 
@@ -129,7 +129,7 @@ def train_model(encoder, scorer, sentences, labels, save_path = None, epoch_num 
         loss = loss_fn(scores, labels)
         loss.backward()
         optimizer.step()
-        print(f"\nEpoch {epoch + 1}/{EPOCHS} - Loss: {loss.item():.4f}")
+        print(f"\nEpoch {epoch + 1 + epoch_idx}/{EPOCHS} - Loss: {loss.item():.4f}")
         current, peak = tracemalloc.get_traced_memory()
         print(f"Current: {current / 1024:.2f} KB")
         print(f"Peak: {peak / 1024:.2f} KB")
@@ -265,8 +265,83 @@ def experimental_train_and_test():
     summary = summarize(encoder, scorer, document2, num_sentences=n)
     print(f"\nSummary on test document ({n} sentences):\n", summary)
 
+def train_N_single_example(N=1, test_examples_num = 1, dataset_filepath=None, save_path=None, summary_sentences_num = 5, epoch_num = EPOCHS):
+    # Create iterator
+    examples_iter = iter(extract_examples(dataset_filepath))
 
-def train_on_N_examples(N=1, test_examples_num = 1, dataset_filepath=None, save_path=None, summary_sentences_num = 5, epoch_num = EPOCHS):
+    encoder = BertSentenceEncoder()
+    scorer = SentenceScorer().to(DEVICE)
+
+    # EPOCH LOOP
+    for epoch in range(epoch_num):
+
+
+        # Get train examples
+        for i in range(N):
+            try:
+                example = next(examples_iter)
+            except StopIteration:
+                break
+
+            # Get one example
+            print("\nLoading example", i)
+            # Data from example
+            article = example.get("article")
+            labels = example.get("labels")
+            print(article[:100], "...")
+            print(labels)
+            # Compute sentence tokens
+            # Normalize sentences: remove leading/trailing spaces
+            sentences = [s.strip() for s in sent_tokenize(article)]
+
+            current, peak = tracemalloc.get_traced_memory()
+            print(f"Current: {current / 1024:.2f} KB")
+            print(f"Peak: {peak / 1024:.2f} KB")
+
+            # Train one example
+            train_labels_tensor = torch.tensor(labels, dtype=torch.float32).to(DEVICE)
+            print(train_labels_tensor)
+            train_model(encoder, scorer, sentences, train_labels_tensor, save_path=save_path, epoch_num=1, epoch_idx=epoch)
+
+    # Get test examples (resume iterator)
+    test_examples = []
+    for i in range(test_examples_num):
+        try:
+            example = next(examples_iter)
+        except StopIteration:
+            break
+
+        print("\nLoading test example", i)
+        # Data from example
+        article = example.get("article")
+        print(article[:100], "...")
+        # Compute sentence tokens
+        # Append
+        test_examples.append(example)
+
+    # Test model on test examples.
+    for i, e in enumerate(test_examples):
+        summary = summarize(encoder, scorer, e["article"], summary_sentences_num)
+        #summary_old = summarize_old(encoder, scorer, e["article"], summary_sentences_num)
+
+        print("\n==========================")
+        print(f"TEST {i + 1}")
+        print("==========================\n")
+        print("ARTICLE:")
+        print(e["article"])
+        print("SUMMARY:")
+        print(summary)
+
+        #print("SUMMARY_OLD:")
+        #print(summary_old)
+
+        #print("SENTENCES")
+        #sentences = e["sentences"]
+        #for j, sent in enumerate(sentences):
+            #print(f"sent {j}: {sent}")
+
+
+def train_N_all_examples(N=1, test_examples_num = 1, dataset_filepath=None, save_path=None, summary_sentences_num = 5, epoch_num = EPOCHS, example_by_example=True):
     # Create iterator
     examples_iter = iter(extract_examples(dataset_filepath))
 
@@ -340,6 +415,18 @@ def train_on_N_examples(N=1, test_examples_num = 1, dataset_filepath=None, save_
             #print(f"sent {j}: {sent}")
 
 
+
+
+def train_on_N_examples(N=1, test_examples_num = 1, dataset_filepath=None, save_path=None, summary_sentences_num = 5, epoch_num = EPOCHS, example_by_example=True):
+
+    if example_by_example:
+        train_N_single_example(N, test_examples_num, dataset_filepath, save_path, summary_sentences_num, epoch_num)
+    else:
+        train_N_all_examples(N, test_examples_num, dataset_filepath, save_path, summary_sentences_num, epoch_num)
+
+
+
+
 def load_and_test(load_path, dataset_filepath, test_example_start_idx = 0, test_example_num = 1, summary_sentences_num = 5):
     # Initialize encoder and scorer
     encoder, scorer = load_models(load_path)
@@ -379,9 +466,10 @@ def load_and_test(load_path, dataset_filepath, test_example_start_idx = 0, test_
 
 if __name__ == "__main__":
     #experimental_train_and_test()
-    #train_on_N_examples(3, 2,r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv", save_path = "../Modeli/model.pt")
-    load_and_test(load_path="../Modeli/model.pt",
-                  dataset_filepath= r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv",
-                  test_example_start_idx= 3,
-                  test_example_num= 2,
-                  summary_sentences_num= 5)
+    train_on_N_examples(10, 2,r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv", save_path = "../Modeli/model-10-3.pt",
+                        epoch_num=50, example_by_example=True)
+    #load_and_test(load_path="../Modeli/model.pt",
+    #              dataset_filepath= r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv",
+    #              test_example_start_idx= 3,
+    #              test_example_num= 2,
+    #              summary_sentences_num= 5)
