@@ -41,6 +41,11 @@ class SentenceScorer(nn.Module):
 
     def save(self, filepath):
         """
+
+        \n\n\n
+        DEPRECATED!
+        \n\n\n
+
         Save the SentenceScorer model to a file.
         :param filepath:
         :return:
@@ -52,6 +57,11 @@ class SentenceScorer(nn.Module):
     @classmethod
     def load(cls, filepath, device=DEVICE):
         """
+
+        \n\n\n
+        DEPRECATED!
+        \n\n\n
+
         Load a SentenceScorer model from a file.
         :param filepath:
         :param device:
@@ -125,7 +135,7 @@ def train_model(encoder, scorer, sentences, labels, save_path = None, epoch_num 
         print(f"Peak: {peak / 1024:.2f} KB")
 
     if save_path is not None:
-        scorer.save(save_path)
+        save_models(encoder, scorer, save_path)
 
 # -----------------------------
 # 6. Summarization (Inference)
@@ -168,6 +178,51 @@ def summarize_old(encoder, scorer, text, num_sentences):
 
     # Join sentences cleanly
     return " ".join(summary)
+
+
+
+def save_models(encoder, scorer, path):
+    """
+    Save encoder and scorer to path.
+    :param encoder:
+    :param scorer:
+    :param path:
+    :return:
+    """
+    torch.save(
+        {
+            "encoder": encoder.model.state_dict(),
+            "scorer": scorer.state_dict(),
+        },
+        path,
+    )
+    print(f"Models saved to {path}")
+
+
+
+def load_models(path, device=DEVICE):
+    """
+    Load encoder and scorer from path.
+    :param path:
+    :param device:
+    :return:
+    """
+    checkpoint = torch.load(path, map_location=device)
+
+    encoder = BertSentenceEncoder()
+    scorer = SentenceScorer().to(device)
+
+    encoder.model.load_state_dict(checkpoint["encoder"])
+    scorer.load_state_dict(checkpoint["scorer"])
+
+    encoder.model.eval()
+    scorer.eval()
+
+    print(f"Models loaded from {path}")
+    return encoder, scorer
+
+
+
 
 # -----------------------------
 # 7. Example Usage
@@ -285,7 +340,48 @@ def train_on_N_examples(N=1, test_examples_num = 1, dataset_filepath=None, save_
             #print(f"sent {j}: {sent}")
 
 
+def load_and_test(load_path, dataset_filepath, test_example_start_idx = 0, test_example_num = 1, summary_sentences_num = 5):
+    # Initialize encoder and scorer
+    encoder, scorer = load_models(load_path)
+
+    # Set iterator
+    examples_iter = iter(extract_examples(dataset_filepath, test_example_start_idx))
+
+    # Get test examples (resume iterator)
+    test_examples = []
+    for i in range(test_example_num):
+        try:
+            example = next(examples_iter)
+        except StopIteration:
+            break
+
+        print("\nLoading test example", i)
+        # Data from example
+        article = example.get("article")
+        print(article[:100], "...")
+        # Compute sentence tokens
+        # Append
+        test_examples.append(example)
+
+    # Evaluate test examples
+    for i, e in enumerate(test_examples):
+        summary = summarize(encoder, scorer, e["article"], summary_sentences_num)
+        #summary_old = summarize_old(encoder, scorer, e["article"], summary_sentences_num)
+
+        print("\n==========================")
+        print(f"TEST {i + 1}")
+        print("==========================\n")
+        print("ARTICLE:")
+        print(e["article"])
+        print("SUMMARY:")
+        print(summary)
+
 
 if __name__ == "__main__":
     #experimental_train_and_test()
-    train_on_N_examples(3, 2,r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv", save_path = "../Modeli/model.pt")
+    #train_on_N_examples(3, 2,r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv", save_path = "../Modeli/model.pt")
+    load_and_test(load_path="../Modeli/model.pt",
+                  dataset_filepath= r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv",
+                  test_example_start_idx= 3,
+                  test_example_num= 2,
+                  summary_sentences_num= 5)

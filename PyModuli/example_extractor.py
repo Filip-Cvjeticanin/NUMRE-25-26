@@ -8,14 +8,12 @@ def extract_examples(file_path, start_index = 0):
         reader = csv.reader(f)
         header = next(reader)  # skip header
 
-        skip_counter = 0
+        for i in range(start_index):
+            next(reader)
+
         for row_idx, row in enumerate(reader):
             if len(row) != 4:
                 print(f"[WARNING] Skipping malformed row {row_idx}")
-                continue
-
-            if skip_counter < start_index:
-                skip_counter += 1
                 continue
 
             article, abstract, sentences, sentence_labels = row
