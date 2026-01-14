@@ -1,25 +1,36 @@
 import csv
+import json
+import ast
 
-def extract_examples(file_path):
+
+def extract_examples(file_path, start_index = 0):
     with open(file_path, newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
         header = next(reader)  # skip header
 
+        skip_counter = 0
         for row_idx, row in enumerate(reader):
             if len(row) != 4:
                 print(f"[WARNING] Skipping malformed row {row_idx}")
+                continue
+
+            if skip_counter < start_index:
+                skip_counter += 1
                 continue
 
             article, abstract, sentences, sentence_labels = row
             article = article.strip()
             abstract = abstract.strip()
 
+            sentences = ast.literal_eval(sentences)
+            sentence_labels = json.loads(sentence_labels)
+
             if article and abstract:
                 example = {
                     "article": article,
                     "abstract": abstract,
                     "sentences": sentences,
-                    "sentence_labels": sentence_labels
+                    "labels": sentence_labels
                 }
                 yield example
 
