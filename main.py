@@ -31,8 +31,8 @@ if __name__ == "__main__":
     # =============================================================================
     #train_on_N_examples(N=10,
     #                    test_examples_num= 2,
-    #                    dataset_filepath= "../Podatci/SkupPodataka.csv",
-    #                    save_path = "../Modeli/model-test.pt",
+    #                    dataset_filepath= "./Podatci/SkupPodataka.csv",
+    #                    save_path = "./Modeli/model-test.pt",
     #                    epoch_num=10,
     #                    example_by_example=True)
 
