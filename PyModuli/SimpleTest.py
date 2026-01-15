@@ -472,33 +472,30 @@ def load_and_test(load_path, dataset_filepath, test_example_start_idx = 0, test_
     examples_iter = iter(extract_examples(dataset_filepath, test_example_start_idx))
 
     # Get test examples (resume iterator)
-    test_examples = []
     for i in range(test_example_num):
         try:
             example = next(examples_iter)
         except StopIteration:
             break
 
-        print("\nLoading test example", i)
+        print("\nLoading test example", i + 1)
+
         # Data from example
         article = example.get("article")
         print(article[:100], "...")
-        # Compute sentence tokens
-        # Append
-        test_examples.append(example)
 
-    # Evaluate test examples
-    for i, e in enumerate(test_examples):
-        summary = summarize(encoder, scorer, e["article"], summary_sentences_num)
+        # Get summary:
+        summary = summarize(encoder, scorer, article, summary_sentences_num)
         #summary_old = summarize_old(encoder, scorer, e["article"], summary_sentences_num)
 
         print("\n==========================")
         print(f"TEST {i + 1}")
         print("==========================\n")
         print("ARTICLE:")
-        print(e["article"])
+        print(article)
         print("SUMMARY:")
         print(summary)
+
 
 
 if __name__ == "__main__":
