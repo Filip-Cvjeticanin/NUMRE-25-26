@@ -1,2 +1,3 @@
 model.pt=https://mega.nz/file/MJ8wQSJa#m1BKi6JR7nQn0wh41OtNhdgJXyYkHhxQY7541LfDuBI
 model-10.pt=https://mega.nz/file/9dcgmAZS#4-QaLakmRrZfR2pf0b0rTjUwqgb5-vFR6ey3ea1T-N8
+model-seq-3.pt=https://mega.nz/file/kE8EQZpB#icZpXcVlM838CNhxldutCl-O6dSRJTefdRzOzr5HwOA

@@ -1,3 +1,13 @@
+import os
+
+os.environ["OMP_NUM_THREADS"] = "10"
+os.environ["MKL_NUM_THREADS"] = "10"
+os.environ["OPENBLAS_NUM_THREADS"] = "10"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "10"
+os.environ["NUMEXPR_NUM_THREADS"] = "10"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+
 import torch
 import torch.nn as nn
 from transformers import BertTokenizer, BertModel
@@ -5,7 +15,6 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from PyModuli.example_extractor import extract_examples
 import tracemalloc
-import os
 
 tracemalloc.start()
 
@@ -17,6 +26,8 @@ MODEL_NAME = "bert-base-uncased"
 MAX_LEN = 128
 LR = 2e-5
 EPOCHS = 20
+torch.set_num_threads(10)
+torch.set_num_interop_threads(1)
 
 print("device:", DEVICE)
 
@@ -31,7 +42,33 @@ nltk.download("punkt_tab")
 class SentenceScorer(nn.Module):
     def __init__(self, hidden_size=768):
         super().__init__()
-        self.classifier = nn.Linear(hidden_size, 1)
+
+
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300,1)
+        )
+
+
 
 
     def forward(self, embeddings):
@@ -107,7 +144,7 @@ def generate_labels(sentences, summary_sentences):
 # # ==============================
 # 5. Training Function
 # # ==============================
-def train_model(encoder, scorer, sentences, labels, save_path = None, epoch_num = EPOCHS, epoch_idx = 0):
+def train_model(encoder, scorer, sentences, labels, save_path = None, epoch_num = EPOCHS, epoch_idx = 0, max_epochs = 0):
     encoder.model.train()
     scorer.train()
 
@@ -129,7 +166,7 @@ def train_model(encoder, scorer, sentences, labels, save_path = None, epoch_num 
         loss = loss_fn(scores, labels)
         loss.backward()
         optimizer.step()
-        print(f"\nEpoch {epoch + 1 + epoch_idx}/{EPOCHS} - Loss: {loss.item():.4f}")
+        print(f"\nEpoch {epoch + 1 + epoch_idx}/{max_epochs} - Loss: {loss.item():.4f}")
         current, peak = tracemalloc.get_traced_memory()
         print(f"Current: {current / 1024:.2f} KB")
         print(f"Peak: {peak / 1024:.2f} KB")
@@ -301,7 +338,7 @@ def train_N_single_example(N=1, test_examples_num = 1, dataset_filepath=None, sa
             # Train one example
             train_labels_tensor = torch.tensor(labels, dtype=torch.float32).to(DEVICE)
             print(train_labels_tensor)
-            train_model(encoder, scorer, sentences, train_labels_tensor, save_path=save_path, epoch_num=1, epoch_idx=epoch)
+            train_model(encoder, scorer, sentences, train_labels_tensor, save_path=save_path, epoch_num=1, epoch_idx=epoch, max_epochs=epoch_num)
 
     # Get test examples (resume iterator)
     test_examples = []
@@ -466,9 +503,9 @@ def load_and_test(load_path, dataset_filepath, test_example_start_idx = 0, test_
 
 if __name__ == "__main__":
     #experimental_train_and_test()
-    train_on_N_examples(10, 2,r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv", save_path = "../Modeli/model-10-3.pt",
-                        epoch_num=50, example_by_example=True)
-    #load_and_test(load_path="../Modeli/model.pt",
+    train_on_N_examples(10, 2,"../Podatci/SkupPodataka.csv", save_path = "../Modeli/model-test.pt",
+                        epoch_num=100, example_by_example=True)
+    #load_and_test(load_path="../Modeli/model-test.pt",
     #              dataset_filepath= r"C:\Docs\01 - Filip\02 - FER\070 - G4S1\03-NM\Projekt\SkupPodataka-last.csv",
     #              test_example_start_idx= 3,
     #              test_example_num= 2,
