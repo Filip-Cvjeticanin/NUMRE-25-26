@@ -10,12 +10,12 @@ Obavezno lokalno napraviti .venv i instalirati sve u ./Requirements/requirements
 Pokreće se porgram: "./main.py" (odkementirati željeni kod!)
 
 1. Za pokretanje koda u svim odjeljcima osim prvog. Potrebno je skinuti SkupPodataka.csv
-   sa MEGA download linka danog u ./Podatci direktoriju.
+   sa MEGA download linka danog u ./Podatci direktoriju i staviti datoteku u isti direktorij.
 
 2. Za pokretanje trećeg odjeljka potrebno je prvo pokrenuti drugi.
 
 3. Za pokretanje četvrtog odjeljka potrebno je skinuti model pod nazivom model-seq-3.pt sa MEGA
-   download linka danog u ./Modeli direktoriju.
+   download linka danog u ./Modeli direktoriju i staviti datoteku u isti direktorij.
 
 
 
