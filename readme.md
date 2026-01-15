@@ -5,6 +5,8 @@ POKRETANJE
 =================================================================================================
 Python verzija: 3.10.11
 
+Potrebna je veza na internet!
+
 Obavezno lokalno napraviti .venv i instalirati sve u ./Requirements/requirements.txt.
 
 Pokreće se porgram: "./main.py" (odkementirati željeni kod!)
